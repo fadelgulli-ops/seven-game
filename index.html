@@ -399,8 +399,19 @@
         try {
             Pi.init({ version: "2.0", sandbox: false, apiKey: "Y48gijtfedrxchh54lqoolpapbb3j8ix3vmsunpbiypkiku6l9v0zybgqwr75bc1" });
             
+            // Auto approve pending payment upon initialization
             Pi.authenticate(['username', 'payments'], function(payment) {
-                console.log("Incomplete payment found:", payment);
+                console.log("Incomplete payment found, sending approval...", payment);
+                if (payment && payment.identifier) {
+                    fetch('/api/approve', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentId: payment.identifier })
+                    })
+                    .then(res => res.json())
+                    .then(data => console.log("Pending payment approved by server:", data))
+                    .catch(err => console.error("Error approving pending payment:", err));
+                }
             }).then(function(auth) {
                 console.log("Authenticated as:", auth.user.username);
             }).catch(function(error) {
@@ -454,7 +465,14 @@
             if (window.Pi) {
                 try {
                     const auth = await Pi.authenticate(['username', 'payments'], function(payment) {
-                        console.log("Incomplete payment:", payment);
+                        console.log("Incomplete payment found:", payment);
+                        if (payment && payment.identifier) {
+                            fetch('/api/approve', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ paymentId: payment.identifier })
+                            });
+                        }
                     });
                     userWalletAddress = "Pi_" + auth.user.username;
                     finalizeWalletUI(userWalletAddress);
