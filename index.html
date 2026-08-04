@@ -453,7 +453,7 @@
         if (walletType === 'pi-wallet') {
             if (window.Pi) {
                 try {
-                    const auth = await Pi.authenticate(['username'], function(payment) {
+                    const auth = await Pi.authenticate(['username', 'payments'], function(payment) {
                         console.log("Incomplete payment:", payment);
                     });
                     userWalletAddress = "Pi_" + auth.user.username;
@@ -664,7 +664,6 @@
                 onReadyForServerApproval: function(paymentId) {
                     console.log("Sending approval to Vercel server for paymentId:", paymentId);
                     
-                    // Automatically send paymentId to Vercel approve function
                     fetch('/api/approve', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
