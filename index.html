@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -662,10 +662,10 @@
 
             const callbacks = {
                 onReadyForServerApproval: function(paymentId) {
-                    console.log("Sending approval to Netlify server for paymentId:", paymentId);
+                    console.log("Sending approval to Vercel server for paymentId:", paymentId);
                     
-                    // Automatically send paymentId to Netlify approve function
-                    fetch('/.netlify/functions/approve', {
+                    // Automatically send paymentId to Vercel approve function
+                    fetch('/api/approve', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ paymentId: paymentId })
