@@ -1,27 +1,20 @@
- exports.handler = async (event) => {
-    try {
-        const { paymentId } = JSON.parse(event.body);
-        const apiKey = "yqfnn803zbwvaqjnixwkxdaomgwfzcxgmmjvct8cqhi8z7aiuretstq0ojnvcemf";
+module.exports = async (req, res) => {
+  try {
+    const { paymentId } = req.body || {};
+    const apiKey = "yqfnn803zbwvaqjnixwk";
 
-        // Use standard fetch without require
-        const response = await fetch(`https://api.minepi.com/v2/payments/${paymentId}/approve`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Key ${apiKey}`,
-                'Content-Type': 'application/json'
-            }
-        });
+    const response = await fetch(`https://api.pipanetwork.com/v1/payments/${paymentId}/approve`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Key ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
 
-        const data = await response.json();
+    const data = await response.json();
 
-        return {
-            statusCode: 200,
-            body: JSON.stringify(data)
-        };
-    } catch (error) {
-        return {
-            statusCode: 500,
-            body: JSON.stringify({ error: error.message })
-        };
-    }
+    return res.status(200).json(data);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
 };
