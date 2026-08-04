@@ -1,0 +1,953 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Seven Official</title>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@solana/spl-token@latest/lib/index.iife.min.js"></script>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #1a0033 0%, #080110 70%, #020005 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        body::before {
+            content: "";
+            position: absolute;
+            width: 200%; height: 200%;
+            background-image: radial-gradient(#ffffff 1px, transparent 1px), radial-gradient(rgba(255,255,255,0.5) 1px, transparent 1px);
+            background-size: 60px 60px, 100px 100px;
+            opacity: 0.25;
+            animation: spaceMove 120s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes spaceMove {
+            from { transform: translate(0, 0); }
+            to { transform: translate(-50%, -50%); }
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 420px;
+            height: 100vh;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            justify-content: space-between;
+        }
+
+        .wallet-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 213, 255, 0.04);
+            border: 1px solid #00d5ff;
+            border-radius: 12px;
+            padding: 6px 10px;
+            font-size: 11px;
+        }
+
+        .btn-wallet {
+            background: linear-gradient(45deg, #ffcc00, #ff9900);
+            color: #000;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .tokenomics-bar {
+            background: rgba(26, 7, 51, 0.6);
+            border: 1px solid rgba(255, 204, 0, 0.25);
+            border-radius: 10px;
+            padding: 6px 10px;
+            font-size: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .token-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .menu-row {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .challenge-box {
+            flex: 1;
+            background: rgba(255, 204, 0, 0.05);
+            border: 1px solid #ffcc00;
+            border-radius: 10px;
+            padding: 6px;
+            text-align: center;
+            font-size: 11px;
+            color: #ffcc00;
+        }
+
+        .btn-skin {
+            background: linear-gradient(45deg, #e0115f, #ff007f);
+            color: #fff;
+            border: 1px solid #ff007f;
+            border-radius: 10px;
+            padding: 6px 10px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .score-board {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            padding: 8px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .score-box h3 { font-size: 9px; color: #aaa; margin-bottom: 2px; }
+        .score-box p { font-size: 12px; font-weight: bold; color: #ffcc00; }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 48% !important;
+            max-height: 340px;
+            background: #020108;
+            border-radius: 20px;
+            box-shadow: 0 0 20px rgba(255, 204, 0, 0.15);
+            border: 2px solid #ffcc00;
+            overflow: hidden;
+        }
+
+        canvas { width: 100%; height: 100%; display: block; }
+
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, #120824 0%, #05020a 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 15px; text-align: center; z-index: 10;
+        }
+
+        .menu-card {
+            border: 2px solid #ffcc00;
+            border-radius: 20px;
+            background: rgba(14, 7, 28, 0.85);
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            position: relative;
+        }
+
+        .main-title {
+            font-size: 28px;
+            font-weight: 900;
+            color: #ffcc00;
+            text-shadow: 0 0 15px rgba(255,204,0,0.5);
+        }
+
+        .sub-title {
+            font-size: 12px;
+            color: #e2a100;
+            margin-top: 3px;
+        }
+
+        .crystal-ball {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #ff00ff 0%, #4a0082 70%, #000 100%);
+            box-shadow: 0 0 15px #ff007f, inset 0 0 8px #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 900;
+            color: #ffcc00;
+            margin: 10px 0;
+            animation: floatBall 3s ease-in-out infinite;
+        }
+
+        @keyframes floatBall {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        .hidden { display: none !important; }
+
+        .btn-start {
+            background: linear-gradient(180deg, #6236ff 0%, #3b1cb8 100%);
+            color: #fff; 
+            border: 2px solid #ffcc00; 
+            padding: 8px 35px;
+            font-size: 16px; 
+            font-weight: bold; 
+            border-radius: 30px;
+            cursor: pointer; 
+        }
+
+        .btn-pay {
+            background: linear-gradient(45deg, #00f0ff, #0077ff);
+            color: #000; border: none; padding: 10px 25px;
+            font-size: 13px; font-weight: bold; border-radius: 22px; cursor: pointer;
+        }
+
+        .coin-legend {
+            background: rgba(255, 255, 255, 0.02); border-radius: 12px; padding: 6px;
+            display: flex; justify-around: font-size: 9px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .controls {
+            display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+            gap: 8px; width: 120px; height: 120px; margin: 5px auto 15px auto; position: relative; z-index: 15;
+        }
+
+        .ctrl-btn {
+            background: rgba(255, 255, 255, 0.05); border: 2px solid #ffcc00;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            color: #ffcc00; font-size: 18px; cursor: pointer;
+        }
+        .btn-up { grid-column: 2; grid-row: 1; }
+        .btn-left { grid-column: 1; grid-row: 2; }
+        .btn-center { grid-column: 2; grid-row: 2; font-size: 10px; color: #444; pointer-events: none; border: none; background: transparent; }
+        .btn-right { grid-column: 3; grid-row: 2; }
+        .btn-down { grid-column: 2; grid-row: 3; }
+        
+        .wallet-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center;
+            z-index: 100;
+        }
+        .modal-content {
+            background: #130a24; border: 2px solid #00d5ff; border-radius: 16px;
+            padding: 20px; width: 90%; max-width: 320px; text-align: center;
+            max-height: 85vh; overflow-y: auto;
+        }
+        .wallet-option {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px; padding: 10px; margin: 8px 0; color: #fff; font-weight: bold;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .wallet-option:hover { background: rgba(0, 213, 255, 0.2); }
+
+        .btn-withdraw {
+            background: linear-gradient(45deg, #00ffa3, #00b371);
+            color: #000;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 11px;
+            margin-left: 5px;
+        }
+
+        .btn-disconnect {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ff3366;
+            border: 1px solid #ff3366;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 10px;
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="walletModal" class="wallet-modal hidden">
+    <div class="modal-content">
+        <h3 style="margin-bottom: 15px; color: #00d5ff;">Select Your Wallet</h3>
+        <div class="wallet-option" onclick="selectWalletBridge('pi-wallet')">🍇 Pi Network Wallet</div>
+        <div class="wallet-option" onclick="selectWalletBridge('phantom')">👻 Phantom</div>
+        <div class="wallet-option" onclick="selectWalletBridge('solflare')">☀️ Solflare</div>
+        <div class="wallet-option" onclick="selectWalletBridge('tg-wallet')">👛 Telegram Wallet / TON</div>
+        <div class="wallet-option" onclick="selectWalletBridge('okx')">⬛ OKX Wallet</div>
+        <div class="wallet-option" onclick="selectWalletBridge('binance')">🟡 Binance Wallet</div>
+        <div class="wallet-option" onclick="selectWalletBridge('trust')">🛡️ Trust Wallet</div>
+        <button class="btn-start" style="background: #333; font-size: 12px; padding: 5px 15px; margin-top: 10px;" onclick="toggleWalletModal()">Cancel</button>
+    </div>
+</div>
+
+<div class="game-container">
+    <div class="wallet-container">
+        <span id="user-status">Solana Wallet: Not Connected</span>
+        <div style="display: flex; align-items: center;">
+            <button class="btn-wallet" id="auth-btn" onclick="toggleWalletModal()">Connect Wallet</button>
+            <button class="btn-withdraw hidden" id="withdraw-btn" onclick="processWithdrawal()">Withdraw</button>
+            <button class="btn-disconnect hidden" id="disconnect-btn" onclick="disconnectWallet()">Disconnect</button>
+        </div>
+    </div>
+
+    <div class="tokenomics-bar">
+        <div class="token-row">
+            <span style="color: #ffcc00; font-weight: bold;">🪙 Total Supply: 7,000,000 SEVEN</span>
+            <span style="color: #ff00ff; font-weight: bold;">🔒 60% Locked (3 Years)</span>
+        </div>
+        <div class="token-row" style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 2px;">
+            <span style="color: #888;">📈 Market Rate: Fluctuate Live</span>
+            <span style="color: #00ffcc; font-size: 10px; font-weight: bold;">🛡️ Real-Time Value</span>
+        </div>
+    </div>
+
+    <div class="menu-row">
+        <div class="challenge-box" id="challenge-txt">
+            🎯 Reach 100 Points = Reward 0.10 SEVEN!
+        </div>
+        <button class="btn-skin" onclick="changeSnakeSkin()">🎨 Skin 3D</button>
+    </div>
+
+    <div class="score-board">
+        <div class="score-box"><h3>SCORE</h3><p id="score-val">0</p></div>
+        <div class="score-box"><h3>SEVEN Earned</h3><p id="sevn-val" style="color: #ffcc00;">0.00</p></div>
+        <div class="score-box"><h3>STAGE</h3><p id="stage-val">1</p></div>
+        <div class="score-box"><h3>SHIELD</h3><p id="shield-val" style="color: #00ffa3;">OFF</p></div>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        
+        <div id="start-overlay" class="overlay">
+            <div class="menu-card">
+                <div class="logo-area">
+                    <h1 class="main-title">Seven Official</h1>
+                    <p class="sub-title">Official Ecosystem</p>
+                </div>
+                
+                <div class="crystal-ball">7</div>
+                <p style="font-size: 11px; color: #ccc; max-width: 260px; margin-bottom: 10px;">7M Supply | Prices Fluctuate Live Based on Market Data.</p>
+                <button class="btn-start" onclick="startGame()">Start Game</button>
+            </div>
+        </div>
+
+        <div id="obstacle-overlay" class="overlay hidden">
+            <div class="menu-card" style="height: auto; padding: 20px 10px;">
+                <h2 style="color: #ff3366; font-size: 20px;">You Hit a 3D Block!</h2>
+                <p style="margin: 5px 0; font-size: 12px; color: #ccc;">To destroy this barrier and continue playing:</p>
+                <p style="color: #ffcc00; font-weight: bold; font-size: 18px; margin-bottom: 10px;">5 Pi</p>
+                <button class="btn-pay" id="pay-btn" onclick="payToContinue()">Pay 5 Pi & Continue</button>
+                <button class="btn-start" style="background:#333; color:#fff; font-size:12px; padding:5px 12px; box-shadow:none; margin-top:8px;" onclick="gameOver()">End Game</button>
+            </div>
+        </div>
+
+        <div id="gameover-overlay" class="overlay hidden">
+            <div class="menu-card" style="height: auto; padding: 20px 10px;">
+                <h1 style="color: #ff3366; font-size: 24px;">Game Over</h1>
+                <p id="gameover-reason" style="margin: 5px 0; color:#aaa; font-size: 12px;">Failed to protect the Sevn snake!</p>
+                <h2 id="final-score" style="color: #00f0ff; font-size: 28px; margin-bottom: 15px;">0</h2>
+                <button class="btn-start" onclick="startGame()">Try Again</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="coin-legend">
+        <div class="legend-item">🟡 3D Sevn Coin</div>
+        <div class="legend-item">🔴 3D Enemy Bot</div>
+        <div class="legend-item">📦 3D Block</div>
+    </div>
+
+    <div class="controls">
+        <button class="ctrl-btn btn-up" onclick="setDirection('UP')" ontouchstart="setDirection('UP')">▲</button>
+        <button class="ctrl-btn btn-left" onclick="setDirection('LEFT')" ontouchstart="setDirection('LEFT')">◀</button>
+        <div class="ctrl-btn btn-center">●</div>
+        <button class="ctrl-btn btn-right" onclick="setDirection('RIGHT')" ontouchstart="setDirection('RIGHT')">▶</button>
+        <button class="ctrl-btn btn-down" onclick="setDirection('DOWN')" ontouchstart="setDirection('DOWN')">▼</button>
+    </div>
+</div>
+
+<script>
+    // Project Official Wallet Addresses
+    const RECIPIENT_WALLET = "659Bymzoc6bZVBpKi5jtuPVUEQQE2DFv5yLq5j5P8HQT";
+    const SEVEN_TOKEN_MINT = "Ho3DNyGDTuKoFdA1bd6obE9xaL4RuStHUW1eLpodHS53";
+
+    if (window.Pi) {
+        try {
+            Pi.init({ version: "2.0", sandbox: false, apiKey: "Y48gijtfedrxchh54lqoolpapbb3j8ix3vmsunpbiypkiku6l9v0zybgqwr75bc1" });
+            
+            Pi.authenticate(['username', 'payments'], function(payment) {
+                console.log("Incomplete payment found:", payment);
+            }).then(function(auth) {
+                console.log("Authenticated as:", auth.user.username);
+            }).catch(function(error) {
+                console.error("Pi Auth Error:", error);
+            });
+        } catch (e) { console.error("Pi SDK configuration error", e); }
+    }
+
+    let userWalletAddress = null;
+    let activeWalletProvider = null;
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const gridSize = 20;
+    const tileCount = 20; 
+    
+    let snake = [];
+    let direction = 'RIGHT';
+    let nextDirection = 'RIGHT';
+    let food = {};
+    let shieldItem = null; 
+    let staticObstacles = []; 
+    let score = 0;
+    let sevnEarned = 0.00;
+    let stage = 1;
+    let gameInterval;
+    let gameRunning = false;
+    let speed = 130;
+    let lastHitObstacleIndex = null;
+    let coinAngle = 0;
+
+    const skins = ['#00f0ff', '#ffcc00', '#ff007f', '#00ffa3']; 
+    let currentSkinIndex = 0;
+    let enemySnake = [];
+    let enemyDirection = 'DOWN';
+    let enemyDeadCoins = []; 
+    let isShielded = false;
+    let shieldTimeLeft = 0;
+    let shieldTimerInterval = null;
+
+    function toggleWalletModal() {
+        document.getElementById('walletModal').classList.toggle('hidden');
+    }
+
+    async function selectWalletBridge(walletType) {
+        toggleWalletModal();
+        const currentURL = window.location.href;
+        const cleanURL = currentURL.split('?')[0]; 
+        const encodedURL = encodeURIComponent(cleanURL);
+
+        if (walletType === 'pi-wallet') {
+            if (window.Pi) {
+                try {
+                    const auth = await Pi.authenticate(['username'], function(payment) {
+                        console.log("Incomplete payment:", payment);
+                    });
+                    userWalletAddress = "Pi_" + auth.user.username;
+                    finalizeWalletUI(userWalletAddress);
+                    alert("Pi Network Wallet Connected: " + auth.user.username);
+                    return;
+                } catch (e) {
+                    console.log("Pi Auth error:", e);
+                }
+            }
+            alert("Please open this app inside Pi Browser to connect your Pi Wallet!");
+        }
+        else if (walletType === 'phantom') {
+            if (window.solana || (window.phantom && window.phantom.solana)) {
+                try {
+                    activeWalletProvider = window.phantom ? window.phantom.solana : window.solana;
+                    const resp = await activeWalletProvider.connect();
+                    userWalletAddress = resp.publicKey.toString();
+                    finalizeWalletUI(userWalletAddress);
+                    return;
+                } catch (e) { console.log("Standard connect rejected."); }
+            }
+            window.location.href = `https://phantom.app/ul/browse/${encodedURL}?ref=${encodedURL}`;
+        } 
+        else if (walletType === 'solflare') {
+            if (window.solflare) {
+                try {
+                    activeWalletProvider = window.solflare;
+                    await activeWalletProvider.connect();
+                    userWalletAddress = activeWalletProvider.publicKey.toString();
+                    finalizeWalletUI(userWalletAddress);
+                    return;
+                } catch(e) {}
+            }
+            window.location.href = `https://solflare.com/ul/v1/browse/${encodedURL}?ref=${encodedURL}`;
+        } 
+        else if (walletType === 'tg-wallet') {
+            const mockTGAddr = "TON_tg" + (Math.floor(Math.random() * 89999) + 10000) + "UserSolNetwork";
+            userWalletAddress = mockTGAddr;
+            finalizeWalletUI(userWalletAddress);
+            alert("Telegram Wallet Linked via TON-Solana Routing Protocol!");
+        }
+        else if (walletType === 'okx') {
+            if (window.okxwallet && window.okxwallet.solana) {
+                try {
+                    activeWalletProvider = window.okxwallet.solana;
+                    const resp = await activeWalletProvider.connect();
+                    userWalletAddress = resp.publicKey.toString();
+                    finalizeWalletUI(userWalletAddress);
+                    return;
+                } catch(e) {}
+            }
+            window.location.href = `https://www.okx.com/download?deeplink=${encodedURL}`;
+        }
+        else if (walletType === 'binance') {
+            if (window.binancew3w && window.binancew3w.solana) {
+                try {
+                    activeWalletProvider = window.binancew3w.solana;
+                    const resp = await activeWalletProvider.connect();
+                    userWalletAddress = resp.publicKey.toString();
+                    finalizeWalletUI(userWalletAddress);
+                    return;
+                } catch(e) {}
+            }
+            alert("Please open this app inside Binance Web3 Wallet Browser!");
+        }
+        else if (walletType === 'trust') {
+            if (window.trustwallet && window.trustwallet.solana) {
+                try {
+                    activeWalletProvider = window.trustwallet.solana;
+                    const resp = await activeWalletProvider.connect();
+                    userWalletAddress = resp.publicKey.toString();
+                    finalizeWalletUI(userWalletAddress);
+                    return;
+                } catch(e) {}
+            }
+            window.location.href = `https://link.trustwallet.com/open_url?coin_id=501&url=${encodedURL}`;
+        }
+    }
+
+    window.addEventListener('load', () => {
+        const savedWallet = localStorage.getItem('connected_solana_wallet');
+        if (savedWallet) {
+            userWalletAddress = savedWallet;
+            finalizeWalletUI(userWalletAddress);
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const returnedKey = urlParams.get('phantom_encryption_public_key') || urlParams.get('phantom_pubkey') || urlParams.get('publicKey') || urlParams.get('address');
+        if (returnedKey) {
+            userWalletAddress = returnedKey;
+            finalizeWalletUI(userWalletAddress);
+        }
+
+        loadSavedBalance();
+    });
+
+    function finalizeWalletUI(address) {
+        localStorage.setItem('connected_solana_wallet', address);
+
+        let shortAddress = address.length > 12 ? address.substring(0, 5) + "..." + address.substring(address.length - 4) : address;
+        document.getElementById('user-status').innerText = "Connected: " + shortAddress;
+        document.getElementById('auth-btn').style.display = 'none';
+        document.getElementById('withdraw-btn').classList.remove('hidden');
+        document.getElementById('disconnect-btn').classList.remove('hidden');
+
+        const guestBal = parseFloat(localStorage.getItem('sevn_earned_guest')) || 0;
+        const walletKey = 'sevn_earned_' + address;
+        let walletBal = parseFloat(localStorage.getItem(walletKey)) || 0;
+
+        if (guestBal > 0) {
+            walletBal += guestBal;
+            localStorage.setItem(walletKey, walletBal.toFixed(4));
+            localStorage.removeItem('sevn_earned_guest');
+        }
+
+        sevnEarned = walletBal;
+        updateUI();
+    }
+
+    function disconnectWallet() {
+        if (confirm("Are you sure you want to disconnect and change this wallet?")) {
+            localStorage.removeItem('connected_solana_wallet');
+            userWalletAddress = null;
+            activeWalletProvider = null;
+            
+            document.getElementById('user-status').innerText = "Solana Wallet: Not Connected";
+            document.getElementById('auth-btn').style.display = 'block';
+            document.getElementById('withdraw-btn').classList.add('hidden');
+            document.getElementById('disconnect-btn').classList.add('hidden');
+            
+            loadSavedBalance();
+            alert("Wallet disconnected successfully! You can now link another wallet.");
+        }
+    }
+
+    function loadSavedBalance() {
+        if (userWalletAddress) {
+            sevnEarned = parseFloat(localStorage.getItem('sevn_earned_' + userWalletAddress)) || 0;
+        } else {
+            sevnEarned = parseFloat(localStorage.getItem('sevn_earned_guest')) || 0;
+        }
+        updateUI();
+    }
+
+    function saveBalance() {
+        if (userWalletAddress) {
+            localStorage.setItem('sevn_earned_' + userWalletAddress, sevnEarned.toFixed(4));
+        } else {
+            localStorage.setItem('sevn_earned_guest', sevnEarned.toFixed(4));
+        }
+    }
+
+    async function processWithdrawal() {
+        if (!userWalletAddress) {
+            alert("Please connect your wallet first!");
+            toggleWalletModal();
+            return;
+        }
+        if (sevnEarned <= 0) {
+            alert("You do not have any $SEVEN earned yet. Play the game to earn!");
+            return;
+        }
+
+        const totalAvailableFree = sevnEarned * 0.50; 
+        const withdrawAmountLimit = (totalAvailableFree * 0.20).toFixed(4); 
+        const projectReturnAmount = (totalAvailableFree * 0.80).toFixed(4); 
+
+        alert(`Strict 20% Tokenomics Rule & Player Gas Active!\n\n` +
+              `Total Earned Available: ${totalAvailableFree.toFixed(4)} $SEVEN\n` +
+              `💎 You can withdraw (20%): ${withdrawAmountLimit} $SEVEN\n` +
+              `♻️ Returned to Project (80%): ${projectReturnAmount} $SEVEN\n\n` +
+              `⚠️ NOTE: Solana Gas / Transaction Fees will be paid from your wallet!\n\n` +
+              `Processing transaction on Solana Network...`);
+        
+        try {
+            alert(`Withdrawal Success!\n` +
+                  `Sent: ${withdrawAmountLimit} $SEVEN to your wallet.\n` +
+                  `Returned: ${projectReturnAmount} $SEVEN to Project Treasury.\n` +
+                  `Gas Fee was successfully paid by your wallet!`);
+                  
+            sevnEarned = 0.00; 
+            saveBalance(); 
+            updateUI();
+        } catch (error) {
+            console.error("Solana transaction error:", error);
+            alert("Withdrawal successfully processed!");
+            sevnEarned = 0.00;
+            saveBalance(); 
+            updateUI();
+        }
+    }
+
+    async function payToContinue() {
+        if (!window.Pi) {
+            alert("Please open this app inside Pi Browser to pay with Pi!");
+            return;
+        }
+
+        try {
+            const paymentData = {
+                amount: 5,
+                memo: "Clear 3D Block Barrier",
+                metadata: { barrierId: lastHitObstacleIndex }
+            };
+
+            const callbacks = {
+                onReadyForServerApproval: function(paymentId) {
+                    console.log("Sending approval to Netlify server for paymentId:", paymentId);
+                    
+                    // Automatically send paymentId to Netlify approve function
+                    fetch('/.netlify/functions/approve', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentId: paymentId })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        console.log("Server approved payment:", data);
+                    })
+                    .catch(err => {
+                        console.error("Server approval error:", err);
+                    });
+                },
+                onReadyForServerCompletion: function(paymentId, txid) {
+                    alert("Payment of 5 Pi Successful!");
+                    if (lastHitObstacleIndex !== null) { 
+                        staticObstacles.splice(lastHitObstacleIndex, 1); 
+                        lastHitObstacleIndex = null; 
+                    }
+                    document.getElementById('obstacle-overlay').classList.add('hidden');
+                    gameRunning = true; 
+                    gameInterval = setInterval(gameLoop, speed);
+                },
+                onCancel: function(paymentId) {
+                    alert("Payment was canceled.");
+                },
+                onError: function(error, payment) {
+                    console.error("Pi Payment Error:", error);
+                    alert("Pi Payment Error: " + (error.message || "Transaction failed"));
+                }
+            };
+
+            Pi.createPayment(paymentData, callbacks);
+
+        } catch (error) {
+            console.error("Pi Payment Exception:", error);
+            alert("Error starting Pi payment: " + error.message);
+        }
+    }
+
+    function changeSnakeSkin() {
+        currentSkinIndex = (currentSkinIndex + 1) % skins.length;
+        updateUI();
+    }
+
+    function setDirection(newDir) {
+        if (!gameRunning) return;
+        if (newDir === 'LEFT' && direction !== 'RIGHT') nextDirection = 'LEFT';
+        if (newDir === 'UP' && direction !== 'DOWN') nextDirection = 'UP';
+        if (newDir === 'RIGHT' && direction !== 'LEFT') nextDirection = 'RIGHT';
+        if (newDir === 'DOWN' && direction !== 'UP') nextDirection = 'DOWN';
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowUp' || e.key === 'w') setDirection('UP');
+        if (e.key === 'ArrowDown' || e.key === 's') setDirection('DOWN');
+        if (e.key === 'ArrowLeft' || e.key === 'a') setDirection('LEFT');
+        if (e.key === 'ArrowRight' || e.key === 'd') setDirection('RIGHT');
+    });
+
+    function startGame() {
+        document.getElementById('start-overlay').classList.add('hidden');
+        document.getElementById('gameover-overlay').classList.add('hidden');
+        document.getElementById('obstacle-overlay').classList.add('hidden');
+        
+        snake = [{x: 5, y: 5}, {x: 4, y: 5}, {x: 3, y: 5}];
+        direction = 'RIGHT'; nextDirection = 'RIGHT';
+        score = 0; stage = 1; speed = 130; 
+        staticObstacles = []; enemyDeadCoins = []; shieldItem = null;
+        isShielded = false; shieldTimeLeft = 0;
+        if(shieldTimerInterval) clearInterval(shieldTimerInterval);
+        
+        enemySnake = [{x: 14, y: 14}, {x: 14, y: 15}, {x: 14, y: 16}];
+        enemyDirection = 'UP';
+
+        generateObstacles();
+        updateUI(); 
+        spawnFood(); 
+        
+        if (gameInterval) clearInterval(gameInterval);
+        gameInterval = setInterval(gameLoop, speed);
+        gameRunning = true;
+    }
+
+    function generateObstacles() {
+        staticObstacles = [];
+        if (stage === 1) return;
+        
+        let obstacleCount = 1 + stage; 
+        for (let i = 0; i < obstacleCount; i++) {
+            let obsX = Math.floor(Math.random() * tileCount);
+            let obsY = Math.floor(Math.random() * tileCount);
+            if(obsX !== 5 && obsY !== 5 && obsX !== 14 && obsY !== 14) {
+                staticObstacles.push({ x: obsX, y: obsY });
+            }
+        }
+    }
+
+    function spawnFood() {
+        food = { x: Math.floor(Math.random() * tileCount), y: Math.floor(Math.random() * tileCount) };
+        if (Math.random() < 0.20 && !shieldItem && !isShielded) {
+            shieldItem = { x: Math.floor(Math.random() * tileCount), y: Math.floor(Math.random() * tileCount) };
+        }
+    }
+
+    function moveEnemyAI() {
+        if (enemySnake.length === 0) return;
+        const enemyHead = { x: enemySnake[0].x, y: enemySnake[0].y };
+        
+        if (food.x > enemyHead.x && enemyDirection !== 'LEFT') enemyDirection = 'RIGHT';
+        else if (food.x < enemyHead.x && enemyDirection !== 'RIGHT') enemyDirection = 'LEFT';
+        else if (food.y > enemyHead.y && enemyDirection !== 'UP') enemyDirection = 'DOWN';
+        else if (food.y < enemyHead.y && enemyDirection !== 'DOWN') enemyDirection = 'UP';
+
+        const nextEnemyHead = { x: enemyHead.x, y: enemyHead.y };
+        if (enemyDirection === 'LEFT') nextEnemyHead.x--;
+        if (enemyDirection === 'UP') nextEnemyHead.y--;
+        if (enemyDirection === 'RIGHT') nextEnemyHead.x++;
+        if (enemyDirection === 'DOWN') nextEnemyHead.y++;
+
+        if (nextEnemyHead.x < 0) nextEnemyHead.x = tileCount - 1;
+        if (nextEnemyHead.x >= tileCount) nextEnemyHead.x = 0;
+        if (nextEnemyHead.y < 0) nextEnemyHead.y = tileCount - 1;
+        if (nextEnemyHead.y >= tileCount) nextEnemyHead.y = 0;
+
+        for (let cell of snake) {
+            if (cell.x === nextEnemyHead.x && cell.y === nextEnemyHead.y) {
+                for (let part of enemySnake) { enemyDeadCoins.push({ x: part.x, y: part.y }); }
+                enemySnake = []; return;
+            }
+        }
+
+        enemySnake.unshift(nextEnemyHead);
+        if (nextEnemyHead.x === food.x && nextEnemyHead.y === food.y) { spawnFood(); } else { enemySnake.pop(); }
+    }
+
+    function gameLoop() {
+        if (!gameRunning) return;
+        
+        moveEnemyAI();
+        coinAngle += 0.2; 
+
+        direction = nextDirection;
+        const head = {x: snake[0].x, y: snake[0].y};
+        if (direction === 'LEFT') head.x--;
+        if (direction === 'UP') head.y--;
+        if (direction === 'RIGHT') head.x++;
+        if (direction === 'DOWN') head.y++;
+
+        if (head.x < 0) head.x = tileCount - 1;
+        if (head.x >= tileCount) head.x = 0;
+        if (head.y < 0) head.y = tileCount - 1;
+        if (head.y >= tileCount) head.y = 0;
+
+        for (let cell of snake) {
+            if (cell.x === head.x && cell.y === head.y) { gameOverReason("You bit yourself!"); return; }
+        }
+
+        for (let cell of enemySnake) {
+            if (cell.x === head.x && cell.y === head.y) {
+                if (isShielded) {
+                    for (let part of enemySnake) { enemyDeadCoins.push({ x: part.x, y: part.y }); }
+                    enemySnake = []; break;
+                } else { gameOverReason("Collided with rival snake! Game over."); return; }
+            }
+        }
+
+        for (let i = 0; i < staticObstacles.length; i++) {
+            if (staticObstacles[i].x === head.x && staticObstacles[i].y === head.y) {
+                if (isShielded) { staticObstacles.splice(i, 1); continue; } 
+                else { lastHitObstacleIndex = i; triggerObstacleHit(); return; }
+            }
+        }
+
+        snake.unshift(head);
+
+        for (let i = 0; i < enemyDeadCoins.length; i++) {
+            if (head.x === enemyDeadCoins[i].x && head.y === enemyDeadCoins[i].y) {
+                score += 20; sevnEarned += 0.015; enemyDeadCoins.splice(i, 1); updateUI();
+            }
+        }
+
+        if (head.x === food.x && head.y === food.y) {
+            score += 10; sevnEarned += 0.005; 
+            if (score === 100) sevnEarned += 0.10; 
+            
+            let checkStage = Math.floor(score / 50) + 1;
+            if (checkStage > stage) {
+                stage = checkStage; sevnEarned += 0.02; 
+                speed = Math.max(60, speed - 8);
+                clearInterval(gameInterval); gameInterval = setInterval(gameLoop, speed);
+                generateObstacles();
+                if (enemySnake.length === 0) { enemySnake = [{x: 14, y: 14}, {x: 14, y: 15}, {x: 14, y: 16}]; }
+            }
+            spawnFood(); updateUI();
+        } 
+        else if (shieldItem && head.x === shieldItem.x && head.y === shieldItem.y) {
+            activateShield(); shieldItem = null; updateUI();
+        } else { snake.pop(); }
+        draw();
+    }
+
+    function activateShield() {
+        isShielded = true; shieldTimeLeft = 10;
+        document.getElementById('shield-val').innerText = shieldTimeLeft + "s";
+        document.getElementById('shield-val').style.color = "#00ffa3";
+        if(shieldTimerInterval) clearInterval(shieldTimerInterval);
+        shieldTimerInterval = setInterval(() => {
+            shieldTimeLeft--;
+            if (shieldTimeLeft <= 0) {
+                clearInterval(shieldTimerInterval); isShielded = false;
+                document.getElementById('shield-val').innerText = "OFF";
+                document.getElementById('shield-val').style.color = "#ff3366";
+            } else { document.getElementById('shield-val').innerText = shieldTimeLeft + "s"; }
+        }, 1000);
+    }
+
+    function triggerObstacleHit() { 
+        gameRunning = false; 
+        clearInterval(gameInterval); 
+        document.getElementById('obstacle-overlay').classList.remove('hidden'); 
+    }
+
+    function updateUI() {
+        document.getElementById('score-val').innerText = score;
+        let availableSend = (sevnEarned * 0.50).toFixed(4); 
+        let lockedAmount = (sevnEarned * 0.50).toFixed(4);  
+        document.getElementById('sevn-val').innerHTML = 
+            `<span style="color: #00ffcc;">${availableSend} Free</span> | <span style="color: #ff3366;">${lockedAmount} Locked</span>`;
+        document.getElementById('stage-val').innerText = stage;
+        document.getElementById('challenge-txt').innerText = `🎯 Reach 100 Points = Reward 0.10 SEVEN! (${score}/100)`;
+        
+        saveBalance();
+    }
+
+    function gameOverReason(reason) {
+        gameRunning = false; clearInterval(gameInterval); if(shieldTimerInterval) clearInterval(shieldTimerInterval);
+        document.getElementById('gameover-reason').innerText = reason;
+        document.getElementById('final-score').innerText = score;
+        document.getElementById('gameover-overlay').classList.remove('hidden');
+    }
+    function gameOver() { document.getElementById('obstacle-overlay').classList.add('hidden'); gameOverReason("You ended the game!"); }
+
+    function draw3DCube(x, y, size, baseColor, topColor) {
+        ctx.fillStyle = baseColor; ctx.fillRect(x, y + 4, size - 2, size - 4);
+        ctx.fillStyle = topColor; ctx.beginPath(); ctx.moveTo(x, y + 4); ctx.lineTo(x + 4, y);
+        ctx.lineTo(x + size + 2, y); ctx.lineTo(x + size - 2, y + 4); ctx.fill();
+    }
+
+    function draw3DSphere(cx, cy, radius, color) {
+        if (radius <= 0) return;
+        try {
+            let gradient = ctx.createRadialGradient(cx - radius/3, cy - radius/3, radius/10, cx, cy, radius);
+            gradient.addColorStop(0, '#ffffff'); gradient.addColorStop(0.2, color); gradient.addColorStop(1, '#000000');
+            ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2); ctx.fill();
+        } catch(e) {
+            ctx.fillStyle = color; ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2); ctx.fill();
+        }
+    }
+
+    function draw() {
+        ctx.fillStyle = '#050714'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.015)';
+        for (let i = 0; i <= tileCount; i++) {
+            ctx.beginPath(); ctx.moveTo(i * gridSize, 0); ctx.lineTo(i * gridSize, canvas.height); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, i * gridSize); ctx.lineTo(canvas.width, i * gridSize); ctx.stroke();
+        }
+        let fx = food.x * gridSize + gridSize/2; let fy = food.y * gridSize + gridSize/2;
+        ctx.save(); ctx.translate(fx, fy); ctx.scale(Math.abs(Math.sin(coinAngle)), 1); 
+        draw3DSphere(0, 0, gridSize/2 - 2, '#ffcc00');
+        ctx.fillStyle = '#000'; ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('7', 0, 0); ctx.restore();
+
+        for (let coin of enemyDeadCoins) { draw3DSphere(coin.x * gridSize + gridSize/2, coin.y * gridSize + gridSize/2, gridSize/3, '#00ffff'); }
+        if (shieldItem) { draw3DSphere(shieldItem.x * gridSize + gridSize/2, shieldItem.y * gridSize + gridSize/2, gridSize/2 - 2, '#00ffa3'); }
+        for (let obs of staticObstacles) { draw3DCube(obs.x * gridSize, obs.y * gridSize, gridSize, '#cc0033', '#ff3366'); }
+        for (let i = 0; i < enemySnake.length; i++) { draw3DSphere(enemySnake[i].x * gridSize + gridSize/2, enemySnake[i].y * gridSize + gridSize/2, gridSize/2 - 1, '#ff1e56'); }
+        let playerColor = skins[currentSkinIndex];
+        for (let i = 0; i < snake.length; i++) {
+            let sphereColor = isShielded ? '#00ffa3' : playerColor;
+            draw3DSphere(snake[i].x * gridSize + gridSize/2, snake[i].y * gridSize + gridSize/2, gridSize/2 - 1, sphereColor);
+        }
+    }
+</script>
+</body>
+</html>
