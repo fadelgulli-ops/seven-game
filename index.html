@@ -696,14 +696,29 @@
                     });
                 },
                 onReadyForServerCompletion: function(paymentId, txid) {
-                    alert("Payment of 5 Pi Successful!");
-                    if (lastHitObstacleIndex !== null) { 
-                        staticObstacles.splice(lastHitObstacleIndex, 1); 
-                        lastHitObstacleIndex = null; 
-                    }
-                    document.getElementById('obstacle-overlay').classList.add('hidden');
-                    gameRunning = true; 
-                    gameInterval = setInterval(gameLoop, speed);
+                    console.log("Sending completion to server for paymentId:", paymentId);
+                    
+                    fetch('/api/complete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentId: paymentId, txid: txid })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        console.log("Server completed payment:", data);
+                        alert("Payment of 5 Pi Successful!");
+                        
+                        if (lastHitObstacleIndex !== null) { 
+                            staticObstacles.splice(lastHitObstacleIndex, 1); 
+                            lastHitObstacleIndex = null; 
+                        }
+                        document.getElementById('obstacle-overlay').classList.add('hidden');
+                        gameRunning = true; 
+                        gameInterval = setInterval(gameLoop, speed);
+                    })
+                    .catch(err => {
+                        console.error("Server completion error:", err);
+                    });
                 },
                 onCancel: function(paymentId) {
                     alert("Payment was canceled.");
