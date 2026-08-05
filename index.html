@@ -397,31 +397,29 @@
 
     if (window.Pi) {
         try {
-            Pi.init({ version: "2.0", sandbox: false, apiKey: "Y48gijtfedrxchh54lqoolpapbb3j8ix3vmsunpbiypkiku6l9v0zybgqwr75bc1" });
+            Pi.init({ version: "2.0", sandbox: false, apiKey: "x57ckph0viaa1udskmxxyktbwdflia3jxz4ol8yxjhrzszb2ficjcittrefgw3lp" });
             
-            // Handle pending payments dynamically during authentication
+            // Handle incomplete/pending payments dynamically upon user login
             Pi.authenticate(['username', 'payments'], function(payment) {
-                console.log("Incomplete payment found:", payment);
+                console.log("Incomplete payment found during authentication:", payment);
                 if (payment && payment.identifier) {
                     if (payment.transaction) {
-                        // Complete the payment if transaction exists
                         fetch('/api/complete', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ paymentId: payment.identifier, txid: payment.transaction.txid })
                         })
                         .then(res => res.json())
-                        .then(data => console.log("Pending payment completed:", data))
+                        .then(data => console.log("Pending payment completed automatically:", data))
                         .catch(err => console.error("Error completing pending payment:", err));
                     } else {
-                        // Approve the payment if waiting for approval
                         fetch('/api/approve', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ paymentId: payment.identifier })
                         })
                         .then(res => res.json())
-                        .then(data => console.log("Pending payment approved:", data))
+                        .then(data => console.log("Pending payment approved automatically:", data))
                         .catch(err => console.error("Error approving pending payment:", err));
                     }
                 }
@@ -687,23 +685,17 @@
             const callbacks = {
                 onReadyForServerApproval: function(paymentId) {
                     console.log("Sending approval to Vercel server for paymentId:", paymentId);
-                    
                     fetch('/api/approve', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ paymentId: paymentId })
                     })
                     .then(res => res.json())
-                    .then(data => {
-                        console.log("Server approved payment:", data);
-                    })
-                    .catch(err => {
-                        console.error("Server approval error:", err);
-                    });
+                    .then(data => console.log("Server approved payment:", data))
+                    .catch(err => console.error("Server approval error:", err));
                 },
                 onReadyForServerCompletion: function(paymentId, txid) {
                     console.log("Sending completion to server for paymentId:", paymentId);
-                    
                     fetch('/api/complete', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -722,16 +714,22 @@
                         gameRunning = true; 
                         gameInterval = setInterval(gameLoop, speed);
                     })
-                    .catch(err => {
-                        console.error("Server completion error:", err);
-                    });
+                    .catch(err => console.error("Server completion error:", err));
                 },
                 onCancel: function(paymentId) {
                     alert("Payment was canceled.");
                 },
                 onError: function(error, payment) {
                     console.error("Pi Payment Error:", error);
-                    alert("Pi Payment Error: " + (error.message || "Transaction failed"));
+                    
+                    if (payment && payment.identifier) {
+                        fetch('/api/approve', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ paymentId: payment.identifier })
+                        });
+                    }
+                    alert("Pi Payment Error: " + (error.message || "A pending payment was found. Please refresh the app to clear it."));
                 }
             };
 
