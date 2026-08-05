@@ -399,18 +399,31 @@
         try {
             Pi.init({ version: "2.0", sandbox: false, apiKey: "Y48gijtfedrxchh54lqoolpapbb3j8ix3vmsunpbiypkiku6l9v0zybgqwr75bc1" });
             
-            // Auto approve pending payment upon initialization
+            // Handle pending payments dynamically during authentication
             Pi.authenticate(['username', 'payments'], function(payment) {
-                console.log("Incomplete payment found, sending approval...", payment);
+                console.log("Incomplete payment found:", payment);
                 if (payment && payment.identifier) {
-                    fetch('/api/approve', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ paymentId: payment.identifier })
-                    })
-                    .then(res => res.json())
-                    .then(data => console.log("Pending payment approved by server:", data))
-                    .catch(err => console.error("Error approving pending payment:", err));
+                    if (payment.transaction) {
+                        // Complete the payment if transaction exists
+                        fetch('/api/complete', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ paymentId: payment.identifier, txid: payment.transaction.txid })
+                        })
+                        .then(res => res.json())
+                        .then(data => console.log("Pending payment completed:", data))
+                        .catch(err => console.error("Error completing pending payment:", err));
+                    } else {
+                        // Approve the payment if waiting for approval
+                        fetch('/api/approve', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ paymentId: payment.identifier })
+                        })
+                        .then(res => res.json())
+                        .then(data => console.log("Pending payment approved:", data))
+                        .catch(err => console.error("Error approving pending payment:", err));
+                    }
                 }
             }).then(function(auth) {
                 console.log("Authenticated as:", auth.user.username);
@@ -466,13 +479,6 @@
                 try {
                     const auth = await Pi.authenticate(['username', 'payments'], function(payment) {
                         console.log("Incomplete payment found:", payment);
-                        if (payment && payment.identifier) {
-                            fetch('/api/approve', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ paymentId: payment.identifier })
-                            });
-                        }
                     });
                     userWalletAddress = "Pi_" + auth.user.username;
                     finalizeWalletUI(userWalletAddress);
